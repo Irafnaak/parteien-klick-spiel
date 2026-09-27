@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deutschland Parteien Klick-Spiel</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:#10131a;color:#fff}
+header{padding:18px;text-align:center;background:#181d27;position:sticky;top:0;z-index:2}
+h1{margin:0 0 6px;font-size:25px}.sub{opacity:.7;font-size:13px}
+.total{font-size:22px;font-weight:800;margin-top:10px}
+main{max-width:900px;margin:auto;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.party{border:0;border-radius:18px;min-height:105px;color:white;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 5px 15px #0005;transition:.08s;position:relative;overflow:hidden}
+.party:active{transform:scale(.94)}
+.name{display:block;font-size:18px}.count{display:block;font-size:28px;margin-top:7px}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}.party.hit .flash{animation:flash .18s}
+@keyframes flash{0%{opacity:.65}100%{opacity:0}}
+.controls{display:flex;gap:10px;justify-content:center;margin:18px 0;flex-wrap:wrap}
+button.ctrl{background:#fff;color:#111;border:0;border-radius:12px;padding:11px 18px;font-weight:700;cursor:pointer}
+#ranking{background:#181d27;border-radius:16px;padding:15px;margin-top:12px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff18}
+.row:last-child{border:0}.bar{height:12px;border-radius:8px;flex:1;background:#ffffff18;overflow:hidden}
+.fill{height:100%;border-radius:8px}.num{width:55px;text-align:right;font-weight:800}
+small{opacity:.6;display:block;text-align:center;margin:14px}
+</style>
+</head>
+<body>
+<header>
+<h1>🇩🇪 Parteien-Klick-Spiel</h1>
+<div class="sub">Jeder Klick = 1 Punkt · Live-Spiel, keine echte Wahl</div>
+<div class="total">Gesamtklicks: <span id="total">0</span></div>
+</header>
+<main>
+<div id="grid" class="grid"></div>
+<div class="controls"><button class="ctrl" onclick="resetGame()">↺ Zurücksetzen</button>
+<button class="ctrl" onclick="toggleFull()">⛶ Vollbild</button></div>
+<div id="ranking"><b>Live-Rangliste</b><div id="rows"></div></div>
+<small>Parteinamen orientieren sich an den zur Bundestagswahl 2025 zugelassenen Parteien.</small>
+</main>
+<script>
+const parties=[
+["SPD","#e3000f"],["CDU","#222"],["GRÜNE","#46962b"],["FDP","#ffed00"],["AfD","#009ee0"],
+["CSU","#1d5aa6"],["Die Linke","#be3075"],["FREIE WÄHLER","#f58220"],["Tierschutzpartei","#8b5fbf"],
+["dieBasis","#f0a400"],["Die PARTEI","#e30613"],["Gerechtigkeitspartei","#777"],
+["PIRATEN","#f58220"],["Volt","#502379"],["ÖDP","#63b32e"],["SSW","#e30613"],
+["Verjüngungsforschung","#7a5cff"],["PdH","#5b6ee1"],["Bündnis C","#6b4aa5"],["BP","#0054a6"],
+["MLPD","#ed1c24"],["MENSCHLICHE WELT","#00a99d"],["PdF","#8a2be2"],["SGP","#cc0000"],
+["BüSo","#9b59b6"],["BÜNDNIS DEUTSCHLAND","#005b9a"],["BSW","#7a1fa2"],["MERA25","#f05a28"],
+["WerteUnion","#004b87"]
+];
+let scores=JSON.parse(localStorage.getItem("partyScores")||"{}");
+parties.forEach(p=>scores[p[0]] ??= 0);
+const grid=document.getElementById("grid");
+function render(){
+grid.innerHTML="";
+parties.forEach(([name,color])=>{
+ const b=document.createElement("button");b.className="party";b.style.background=color;
+ b.innerHTML=`<span class="name">${name}</span><span class="count" id="c-${CSS.escape(name)}">${scores[name]}</span><i class="flash"></i>`;
+ b.onclick=()=>add(name,b);grid.appendChild(b);
+});
+update();
+}
+function add(name,b){scores[name]++;localStorage.setItem("partyScores",JSON.stringify(scores));
+ b.classList.remove("hit");void b.offsetWidth;b.classList.add("hit");update();}
+function update(){
+let total=Object.values(scores).reduce((a,b)=>a+b,0);document.getElementById("total").textContent=total.toLocaleString("de-DE");
+parties.forEach(([n])=>{let el=document.getElementById("c-"+CSS.escape(n));if(el)el.textContent=scores[n].toLocaleString("de-DE")});
+let sorted=parties.map(p=>p[0]).sort((a,b)=>scores[b]-scores[a]);
+let max=Math.max(1,...sorted.map(n=>scores[n]));
+document.getElementById("rows").innerHTML=sorted.map((n,i)=>{
+let color=parties.find(p=>p[0]===n)[1];
+return `<div class="row"><b style="width:28px">${i+1}.</b><span style="width:130px">${n}</span><div class="bar"><div class="fill" style="width:${scores[n]/max*100}%;background:${color}"></div></div><span class="num">${scores[n].toLocaleString("de-DE")}</span></div>`;
+}).join("");
+}
+function resetGame(){if(confirm("Alle Klicks zurücksetzen?")){parties.forEach(p=>scores[p[0]]=0);localStorage.setItem("partyScores",JSON.stringify(scores));update();}}
+function toggleFull(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+render();
+</script>
+</body>
+</html>
